@@ -1,12 +1,11 @@
 package com.amaro.controller;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
@@ -16,7 +15,8 @@ import org.codehaus.jackson.map.ObjectMapper;
 
 import com.amaro.dto.Product;
 import com.amaro.dto.ProductList;
-import com.amaro.transformation.Transform;
+import com.amaro.util.Similarity;
+import com.amaro.util.Transform;
 
 @Path("/service")
 public class ProductService {
@@ -36,8 +36,10 @@ public class ProductService {
 				product.initTagsVector();
 				Transform.populateTagVector(product);
 			}
-			
-			String result = mapper.writeValueAsString(productList);
+
+			Transform.writeJsonFile(productList);
+
+			String result = mapper.writeValueAsString(productList.getProducts());
 
 			return result;
 		} catch (JsonParseException e) {
@@ -50,30 +52,34 @@ public class ProductService {
 
 		return "Erro";
 	}
-	
 
-	
-	
 	@GET
-	@Path("/products")
+	@Path("/similarproducts/{productId}")
 	@Produces(MediaType.APPLICATION_JSON)
-	public List<Product> getProductsJSON() {
-		List<Product> listProduct = new ArrayList<>();
+	public Product[] getSimilars(@PathParam("productId") String productId) {
+		try {
+			System.out.println("productId: " + productId);
 
-		Product p1 = new Product(1,"prod 1");
-		Product p2 = new Product(2, "prod 2");
+			// Get the tagsVector from the data base.
+			Product product = Transform.getProduct(productId);
 
-		listProduct.add(p1);
-		listProduct.add(p2);
-		return listProduct;
+			Product[] similarList = Similarity.getSimilarProducts(product);
+
+			return similarList;
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			System.out.println(e.getMessage());
+		} catch (JsonMappingException e) {
+			// TODO Auto-generated catch block
+			System.out.println(e.getMessage());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			System.out.println(e.getMessage());
+		}
+		return null;
 	}
 
-	@POST
-	@Path("/testPost")
-	@Produces(MediaType.APPLICATION_JSON)
-	public String testPost(String x) {
-		System.out.println(x);
 
-		return "updateProducts";
-	}
+	// hashthree
+	// para add os produtos "indexados" pelo id para evitar repetição.
 }
